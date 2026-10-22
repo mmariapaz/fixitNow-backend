@@ -29,4 +29,19 @@ class CategoriaControllerTests {
                 .andExpect(jsonPath("$[*].nombre", contains(
                         "Plomería", "Electricidad", "Gas", "Cerrajería", "Albañilería", "Pintura")));
     }
+
+    @Test
+    void devuelveCategoriaCuandoExiste() throws Exception {
+        mockMvc.perform(get("/api/v1/categorias/1"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.nombre").value("Plomería"));
+    }
+
+    @Test
+    void devuelve404CuandoCategoriaNoExiste() throws Exception {
+        mockMvc.perform(get("/api/v1/categorias/999"))
+                .andExpect(status().isNotFound());
+    }
 }

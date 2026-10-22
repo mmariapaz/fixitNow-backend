@@ -1,6 +1,7 @@
 package com.fixitnow.backend.categoria;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
@@ -17,5 +18,11 @@ public class CategoriaService {
 
     public List<Categoria> listar() {
         return categorias;
+    }
+
+    public Optional<Categoria> buscarPorId(long id) {
+        return categorias.stream()
+                .filter(c -> c.id() == id)
+                .findFirst();
     }
 }
