@@ -19,3 +19,38 @@ Respuesta: HTTP 200, `Content-Type: application/json`.
 
 El catálogo es fijo y permanece solo en memoria. Esta versión no permite crear,
 modificar ni eliminar categorías, y no guarda datos entre ejecuciones.
+
+## Registrar una solicitud preliminar de servicio
+
+`POST /api/v1/solicitudes` permite cargar un borrador preliminar indicando la categoría del oficio, un título breve, una descripción de la necesidad y el nivel de urgencia (`BAJA`, `MEDIA`, `ALTA`, `EMERGENCIA`).
+
+Petición: `Content-Type: application/json`.
+
+```json
+{
+  "categoriaId": 1,
+  "titulo": "Fuga de agua en lavamanos",
+  "descripcion": "El caño de alimentación tiene una pérdida constante.",
+  "nivelUrgencia": "ALTA"
+}
+```
+
+Respuestas:
+
+- Si los datos son válidos y la categoría existe: HTTP 201 Created, `Content-Type: application/json`.
+
+```json
+{
+  "id": 1,
+  "categoriaId": 1,
+  "titulo": "Fuga de agua en lavamanos",
+  "descripcion": "El caño de alimentación tiene una pérdida constante.",
+  "nivelUrgencia": "ALTA",
+  "estado": "BORRADOR"
+}
+```
+
+- Si falta algún campo obligatorio, si los textos están en blanco, si el título supera los 150 caracteres, si el nivel de urgencia es desconocido o si el `categoriaId` no existe en el catálogo: HTTP 400 Bad Request.
+
+Las solicitudes se guardan únicamente en memoria durante la ejecución con un identificador único generado y en estado `BORRADOR`. No persisten entre reinicios y no se publican a profesionales.
+
