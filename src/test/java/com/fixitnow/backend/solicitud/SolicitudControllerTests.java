@@ -213,4 +213,41 @@ class SolicitudControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
     }
+
+    @Test
+    void consultarEstadoSolicitudExistenteDevuelve200ConIdYEstadoSinExponerOtrosCampos() throws Exception {
+        String payload = """
+                {
+                    "categoriaId": 1,
+                    "titulo": "Fuga de gas en cocina",
+                    "descripcion": "Olor a gas cerca de las hornallas.",
+                    "nivelUrgencia": "EMERGENCIA"
+                }
+                """;
+
+        MvcResult createResult = mockMvc.perform(post("/api/v1/solicitudes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        JsonNode responseJson = objectMapper.readTree(createResult.getResponse().getContentAsString());
+        long id = responseJson.get("id").asLong();
+
+        mockMvc.perform(get("/api/v1/solicitudes/{id}/estado", id))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.estado").value("BORRADOR"))
+                .andExpect(jsonPath("$.titulo").doesNotExist())
+                .andExpect(jsonPath("$.descripcion").doesNotExist())
+                .andExpect(jsonPath("$.categoriaId").doesNotExist())
+                .andExpect(jsonPath("$.nivelUrgencia").doesNotExist());
+    }
+
+    @Test
+    void consultarEstadoSolicitudInexistenteDevuelve404() throws Exception {
+        mockMvc.perform(get("/api/v1/solicitudes/{id}/estado", 99999))
+                .andExpect(status().isNotFound());
+    }
 }

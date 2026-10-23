@@ -1,6 +1,7 @@
 package com.fixitnow.backend.solicitud;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -55,5 +56,12 @@ public class SolicitudService {
 
     public List<Solicitud> listar() {
         return List.copyOf(solicitudes);
+    }
+
+    public Optional<SolicitudEstadoResponse> consultarEstado(long id) {
+        return solicitudes.stream()
+                .filter(s -> s.id() == id)
+                .map(s -> new SolicitudEstadoResponse(s.id(), s.estado()))
+                .findFirst();
     }
 }
