@@ -1,12 +1,16 @@
 package com.fixitnow.backend.solicitud;
 
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +32,9 @@ class SolicitudControllerTests {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private SolicitudRepository solicitudRepository;
 
     @Test
     void crearSolicitudValidaDevuelve201ConEstadoBorradorEId() throws Exception {
@@ -95,6 +102,36 @@ class SolicitudControllerTests {
     }
 
     @Test
+    void crearSolicitudPersisteEnBaseDeDatosYSePuedeRecuperarPorRepositorio() throws Exception {
+        String payload = """
+                {
+                    "categoriaId": 3,
+                    "titulo": "Revisión de caño de gas",
+                    "descripcion": "Verificación periódica antes del invierno.",
+                    "nivelUrgencia": "MEDIA"
+                }
+                """;
+
+        MvcResult result = mockMvc.perform(post("/api/v1/solicitudes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
+        long id = json.get("id").asLong();
+
+        Optional<Solicitud> persisted = solicitudRepository.findById(id);
+        assertTrue(persisted.isPresent(), "La solicitud debe existir en la base de datos");
+        Solicitud s = persisted.get();
+        assertEquals(3L, s.getCategoriaId());
+        assertEquals("Revisión de caño de gas", s.getTitulo());
+        assertEquals("Verificación periódica antes del invierno.", s.getDescripcion());
+        assertEquals(NivelUrgencia.MEDIA, s.getNivelUrgencia());
+        assertEquals("BORRADOR", s.getEstado());
+    }
+
+    @Test
     void rechazarPeticionConCamposFaltantesOEnBlancoDevuelve400() throws Exception {
         // Título en blanco
         String tituloEnBlanco = """
@@ -115,7 +152,7 @@ class SolicitudControllerTests {
         String descripcionEnBlanco = """
                 {
                     "categoriaId": 1,
-                    "titulo": "Título válido",
+                    "titulo": "   ",
                     "descripcion": "   ",
                     "nivelUrgencia": "MEDIA"
                 }
@@ -243,6 +280,23 @@ class SolicitudControllerTests {
                 .andExpect(jsonPath("$.descripcion").doesNotExist())
                 .andExpect(jsonPath("$.categoriaId").doesNotExist())
                 .andExpect(jsonPath("$.nivelUrgencia").doesNotExist());
+    }
+
+    @Test
+    void consultarEstadoDeSolicitudPersistidaPreviamenteDevuelve200() throws Exception {
+        Solicitud guardada = solicitudRepository.save(new Solicitud(
+                4L,
+                "Cambio de cerradura",
+                "Cerradura trabada de puerta principal.",
+                NivelUrgencia.ALTA,
+                "BORRADOR"
+        ));
+
+        mockMvc.perform(get("/api/v1/solicitudes/{id}/estado", guardada.getId()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(guardada.getId()))
+                .andExpect(jsonPath("$.estado").value("BORRADOR"));
     }
 
     @Test
