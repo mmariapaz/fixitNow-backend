@@ -68,3 +68,22 @@ Respuestas:
 
 Las solicitudes se guardan únicamente en memoria durante la ejecución con un identificador único generado y en estado `BORRADOR`. No persisten entre reinicios y no se publican a profesionales.
 
+## Consultar el estado de una solicitud
+
+`GET /api/v1/solicitudes/{id}/estado` permite consultar el estado actual de un borrador preliminar a partir de su identificador. Es público y no requiere autenticación.
+
+Respuestas:
+
+- Si la solicitud existe: HTTP 200 OK, `Content-Type: application/json`. Por ejemplo:
+
+```json
+{
+  "id": 1,
+  "estado": "BORRADOR"
+}
+```
+
+- Si la solicitud no existe: HTTP 404 Not Found.
+
+La consulta es de solo lectura: no modifica el estado ni expone otros datos como el título, la descripción, la categoría o el nivel de urgencia.
+
