@@ -2,8 +2,6 @@ package com.fixitnow.backend.solicitud;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -15,11 +13,11 @@ import com.fixitnow.backend.categoria.CategoriaService;
 public class SolicitudService {
 
     private final CategoriaService categoriaService;
-    private final List<Solicitud> solicitudes = new CopyOnWriteArrayList<>();
-    private final AtomicLong nextId = new AtomicLong(1);
+    private final SolicitudRepository solicitudRepository;
 
-    public SolicitudService(CategoriaService categoriaService) {
+    public SolicitudService(CategoriaService categoriaService, SolicitudRepository solicitudRepository) {
         this.categoriaService = categoriaService;
+        this.solicitudRepository = solicitudRepository;
     }
 
     public SolicitudResponse registrarSolicitudPreliminar(SolicitudRequest request) {
@@ -30,11 +28,9 @@ public class SolicitudService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La categoría especificada no existe.");
         }
 
-        long id = nextId.getAndIncrement();
         String estado = "BORRADOR";
 
         Solicitud solicitud = new Solicitud(
-                id,
                 request.categoriaId(),
                 request.titulo(),
                 request.descripcion(),
@@ -42,26 +38,24 @@ public class SolicitudService {
                 estado
         );
 
-        solicitudes.add(solicitud);
+        Solicitud guardada = solicitudRepository.save(solicitud);
 
         return new SolicitudResponse(
-                solicitud.id(),
-                solicitud.categoriaId(),
-                solicitud.titulo(),
-                solicitud.descripcion(),
-                solicitud.nivelUrgencia(),
-                solicitud.estado()
+                guardada.getId(),
+                guardada.getCategoriaId(),
+                guardada.getTitulo(),
+                guardada.getDescripcion(),
+                guardada.getNivelUrgencia(),
+                guardada.getEstado()
         );
     }
 
     public List<Solicitud> listar() {
-        return List.copyOf(solicitudes);
+        return solicitudRepository.findAll();
     }
 
     public Optional<SolicitudEstadoResponse> consultarEstado(long id) {
-        return solicitudes.stream()
-                .filter(s -> s.id() == id)
-                .map(s -> new SolicitudEstadoResponse(s.id(), s.estado()))
-                .findFirst();
+        return solicitudRepository.findById(id)
+                .map(s -> new SolicitudEstadoResponse(s.getId(), s.getEstado()));
     }
 }

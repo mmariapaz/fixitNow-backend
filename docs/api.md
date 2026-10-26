@@ -32,7 +32,7 @@ Respuestas:
 - Si la categoría no existe: HTTP 404 Not Found.
 
 El catálogo es fijo y permanece solo en memoria. Esta versión no permite crear,
-modificar ni eliminar categorías, y no guarda datos entre ejecuciones.
+modificar ni eliminar categorías.
 
 ## Registrar una solicitud preliminar de servicio
 
@@ -66,7 +66,7 @@ Respuestas:
 
 - Si falta algún campo obligatorio, si los textos están en blanco, si el título supera los 150 caracteres, si el nivel de urgencia es desconocido o si el `categoriaId` no existe en el catálogo: HTTP 400 Bad Request.
 
-Las solicitudes se guardan únicamente en memoria durante la ejecución con un identificador único generado y en estado `BORRADOR`. No persisten entre reinicios y no se publican a profesionales.
+Las solicitudes se guardan de forma persistente en una base de datos local relacional (H2 en archivo) con un identificador único generado secuencialmente y en estado `BORRADOR`. **Permanecen disponibles tras reiniciar el backend**. No se publican todavía a profesionales. El campo `categoriaId` referencia el catálogo en memoria y no posee clave foránea relacional en la base de datos.
 
 ## Consultar el estado de una solicitud
 
@@ -85,5 +85,4 @@ Respuestas:
 
 - Si la solicitud no existe: HTTP 404 Not Found.
 
-La consulta es de solo lectura: no modifica el estado ni expone otros datos como el título, la descripción, la categoría o el nivel de urgencia.
-
+La consulta es de solo lectura: no modifica el estado ni expone otros datos como el título, la descripción, la categoría o el nivel de urgencia. Los borradores registrados persisten localmente y pueden ser consultados con su mismo identificador incluso después de detener y reiniciar la aplicación.
