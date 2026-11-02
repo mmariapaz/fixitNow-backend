@@ -1,26 +1,23 @@
-# Decisiones técnicas iniciales
+# Decisiones técnicas
 
-- **Java 21 y Spring Boot 3.3.4:** se mantienen las versiones de referencia del
-  backend histórico `Fixitapp` para que el grupo trabaje sobre una base conocida.
-  Se revisó esa referencia sin copiar su código.
-- **Maven Wrapper:** permite ejecutar los mismos comandos de Maven en distintos
-  equipos sin instalar Maven manualmente. Se usa Spring Web para exponer la API
-  REST y Spring Boot Starter Test para verificarla.
-- **Separación de responsabilidades:** `CategoriaController` recibe la petición
-  HTTP y delega en `CategoriaService`. El servicio conserva el catálogo inicial
-  y devuelve los datos representados por `Categoria`.
-- **Datos temporales:** las seis categorías están en una lista inmutable en
-  memoria. Este incremento no tiene base de datos, autenticación ni operaciones
-  para modificar el catálogo. Los datos se reconstruyen en cada arranque.
-- **Solicitudes preliminares en memoria:** las solicitudes creadas a través de
-  `POST /api/v1/solicitudes` se almacenan en una colección en memoria (`CopyOnWriteArrayList`)
-  y se les asigna un identificador secuencial único (`AtomicLong`). Nacen siempre con estado
-  `BORRADOR`. Los borradores se pierden al reiniciar el servidor. Esta versión no identifica
-  al cliente, no asocia direcciones ni publica solicitudes para profesionales.
-- **Validación en dos etapas:**
-  - El DTO de entrada valida la sintaxis y formato con Bean Validation (`@NotNull`, `@NotBlank`,
-    `@Size(max = 150)` y el enum `NivelUrgencia`).
-  - El servicio (`SolicitudService`) comprueba la regla de negocio consultando `CategoriaService`
-    para verificar que `categoriaId` exista en el catálogo de oficios existente. Si no existe
-    o la entrada es inválida, se devuelve HTTP 400 y no se almacena ningún borrador.
-
+- **Java 21 y Spring Boot 3.3.4:** se mantienen las versiones de referencia del backend para garantizar compatibilidad y consistencia del entorno.
+- **Maven Wrapper:** estandariza las ejecuciones de compilación, empaquetado y pruebas sin requerir instalación manual previa de Maven.
+- **Separación de responsabilidades (Capas, DTOs, Entidad y Repositorio):**
+  - **Controlador (`SolicitudController` / `CategoriaController`):** gestiona las solicitudes HTTP, aplica validaciones y mapea respuestas utilizando exclusivamente DTOs. **No expone entidades JPA directamente** para evitar acoplar la API a la estructura interna de persistencia ni exponer datos inadvertidamente.
+  - **DTOs (`SolicitudRequest`, `SolicitudResponse`, `SolicitudEstadoResponse`):** definen los contratos formales de entrada y salida, asegurando la validación sintáctica mediante Bean Validation (`@NotNull`, `@NotBlank`, `@Size`) y la proyección precisa de atributos (por ejemplo, en la consulta de estado solo se exponen `id` y `estado`).
+  - **Entidad JPA (`Solicitud`):** representa el estado persistente y modela la tabla `solicitudes` en la base relacional con `@Entity`, `@Table(name = "solicitudes")`, `@Id`, `@GeneratedValue(strategy = GenerationType.IDENTITY)` y atributos correspondientes.
+  - **Repositorio (`SolicitudRepository`):** interfaz basada en Spring Data JPA (`JpaRepository<Solicitud, Long>`) que abstrae el acceso a datos y las operaciones CRUD sin acoplar la lógica de negocio a SQL específico o a un motor en particular.
+  - **Servicio (`SolicitudService`):** orquesta las reglas de negocio, valida dependencias entre componentes y traduce entre entidades y DTOs.
+- **Persistencia local de borradores (B05):**
+  - Se sustituye el almacenamiento temporal en memoria (`CopyOnWriteArrayList` y `AtomicLong`) por persistencia local relacional mediante **Spring Data JPA** y **H2 Database en archivo**.
+  - En desarrollo, la conexión apunta a `jdbc:h2:file:./data/fixitnowdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE` con `spring.jpa.hibernate.ddl-auto=update`. Esta configuración evita recrear o vaciar las tablas en cada arranque, garantizando que los borradores sobrevivan a reinicios del servidor.
+  - La carpeta `data/` y los archivos `*.mv.db` / `*.trace.db` están expresamente ignorados en `.gitignore` para no versionar datos locales en Git.
+- **Bases separadas para desarrollo y pruebas:**
+  - El perfil de pruebas utiliza un archivo específico `src/test/resources/application.properties` con base de datos H2 en memoria (`jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1`) y `spring.jpa.hibernate.ddl-auto=create-drop`.
+  - Esto garantiza aislamiento completo: las pruebas automatizadas se ejecutan en un entorno limpio, repetible y sin modificar ni depender de los datos generados durante el desarrollo local.
+- **Relación con el catálogo de categorías:**
+  - El catálogo de categorías sigue definiéndose en memoria (`CategoriaService`) como una colección inmutable fija.
+  - Por esta razón, el campo `categoriaId` en la entidad `Solicitud` se almacena como un valor numérico (`Long`) y su validez se comprueba en el servicio contra el catálogo disponible, sin declarar una clave foránea (FK) relacional en esta etapa.
+- **Alcance y limitaciones:**
+  - Las solicitudes registradas permanecen en estado `BORRADOR` y no se publican a profesionales.
+  - No se cuenta con autenticación, autorización ni control de titularidad sobre las solicitudes. La API no es apta para despliegue público ni para registrar información personal real hasta implementar mecanismos de seguridad adecuados.
