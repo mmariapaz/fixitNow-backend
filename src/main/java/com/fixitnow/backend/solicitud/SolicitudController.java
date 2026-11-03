@@ -35,6 +35,14 @@ public class SolicitudController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @GetMapping
+    public ResponseEntity<List<SolicitudResponse>> listarMisSolicitudes(
+            @AuthenticationPrincipal Jwt jwt) {
+        Long clienteId = Long.parseLong(jwt.getSubject());
+        List<SolicitudResponse> response = solicitudService.listarPorCliente(clienteId);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{id}/estado")
     public ResponseEntity<SolicitudEstadoResponse> consultarEstado(
             @PathVariable long id,

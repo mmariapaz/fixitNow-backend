@@ -85,6 +85,20 @@ public class SolicitudService {
     }
 
     @Transactional(readOnly = true)
+    public List<SolicitudResponse> listarPorCliente(Long clienteId) {
+        return solicitudRepository.findAllByClienteId(clienteId).stream()
+                .map(s -> new SolicitudResponse(
+                        s.getId(),
+                        s.getCategoriaId(),
+                        s.getTitulo(),
+                        s.getDescripcion(),
+                        s.getNivelUrgencia(),
+                        s.getEstado()
+                ))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public Optional<SolicitudEstadoResponse> consultarEstado(long id, Long clienteId) {
         return solicitudRepository.findByIdAndClienteId(id, clienteId)
                 .map(s -> new SolicitudEstadoResponse(s.getId(), s.getEstado()));
