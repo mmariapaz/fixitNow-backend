@@ -1,5 +1,7 @@
 package com.fixitnow.backend.solicitud;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -33,6 +35,15 @@ public class Solicitud {
     @Column(nullable = false)
     private String estado;
 
+    @Column(nullable = true)
+    private Long clienteId;
+
+    @Column(nullable = true)
+    private Long direccionId;
+
+    @Column(nullable = true)
+    private LocalDateTime fechaTentativa;
+
     protected Solicitud() {
         // Constructor requerido por JPA
     }
@@ -45,13 +56,44 @@ public class Solicitud {
         this.estado = estado;
     }
 
-    public Solicitud(Long id, Long categoriaId, String titulo, String descripcion, NivelUrgencia nivelUrgencia, String estado) {
+    public Solicitud(Long categoriaId, String titulo, String descripcion, NivelUrgencia nivelUrgencia, String estado, Long clienteId) {
+        this.categoriaId = categoriaId;
+        this.titulo = titulo;
+        this.descripcion = descripcion;
+        this.nivelUrgencia = nivelUrgencia;
+        this.estado = estado;
+        this.clienteId = clienteId;
+    }
+
+    public Solicitud(Long id, Long categoriaId, String titulo, String descripcion, NivelUrgencia nivelUrgencia, String estado, Long clienteId) {
         this.id = id;
         this.categoriaId = categoriaId;
         this.titulo = titulo;
         this.descripcion = descripcion;
         this.nivelUrgencia = nivelUrgencia;
         this.estado = estado;
+        this.clienteId = clienteId;
+    }
+
+    public Solicitud(Long id, Long categoriaId, String titulo, String descripcion, NivelUrgencia nivelUrgencia, String estado, Long clienteId, Long direccionId, LocalDateTime fechaTentativa) {
+        this.id = id;
+        this.categoriaId = categoriaId;
+        this.titulo = titulo;
+        this.descripcion = descripcion;
+        this.nivelUrgencia = nivelUrgencia;
+        this.estado = estado;
+        this.clienteId = clienteId;
+        this.direccionId = direccionId;
+        this.fechaTentativa = fechaTentativa;
+    }
+
+    public void publicar(Long direccionId, LocalDateTime fechaTentativa) {
+        if (!"BORRADOR".equals(this.estado)) {
+            throw new IllegalStateException("Solo se pueden publicar solicitudes en estado BORRADOR.");
+        }
+        this.direccionId = direccionId;
+        this.fechaTentativa = fechaTentativa;
+        this.estado = "PUBLICADA";
     }
 
     public Long getId() {
@@ -78,6 +120,18 @@ public class Solicitud {
         return estado;
     }
 
+    public Long getClienteId() {
+        return clienteId;
+    }
+
+    public Long getDireccionId() {
+        return direccionId;
+    }
+
+    public LocalDateTime getFechaTentativa() {
+        return fechaTentativa;
+    }
+
     public Long id() {
         return id;
     }
@@ -100,5 +154,17 @@ public class Solicitud {
 
     public String estado() {
         return estado;
+    }
+
+    public Long clienteId() {
+        return clienteId;
+    }
+
+    public Long direccionId() {
+        return direccionId;
+    }
+
+    public LocalDateTime fechaTentativa() {
+        return fechaTentativa;
     }
 }

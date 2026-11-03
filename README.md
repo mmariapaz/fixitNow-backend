@@ -45,6 +45,45 @@ En Windows:
    ```
    Devuelve HTTP 200 OK con el identificador y el estado `BORRADOR` (o HTTP 404 si no existe).
 
+4. **Registrar cuenta de usuario (Cliente o Profesional):**
+   ```bash
+   curl -i -X POST http://localhost:8080/api/v1/auth/registro \
+     -H "Content-Type: application/json" \
+     -d '{"correo": "cliente@ejemplo.com", "contrasena": "claveSegura123", "rol": "CLIENTE"}'
+   ```
+   Devuelve HTTP 201 Created con `id`, `correo` normalizado y `rol` asignado (sin exponer contraseña ni hash).
+
+5. **Iniciar sesión:**
+   ```bash
+   curl -i -X POST http://localhost:8080/api/v1/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"correo": "cliente@ejemplo.com", "contrasena": "claveSegura123"}'
+   ```
+   Devuelve HTTP 200 OK con `accessToken`, `tokenType: "Bearer"` y `expiresIn: 900`.
+
+6. **Consultar perfil propio autenticado:**
+   ```bash
+   curl -i http://localhost:8080/api/v1/auth/me \
+     -H "Authorization: Bearer <accessToken>"
+   ```
+   Devuelve HTTP 200 OK con `id`, `correo` y `rol` del usuario autenticado (HTTP 401 si el token no es válido o está ausente).
+
+## Variable de entorno JWT_SECRET
+
+Para iniciar la aplicación en desarrollo o producción, es obligatorio definir la variable de entorno `JWT_SECRET` con una clave secreta de al menos 256 bits (32 caracteres):
+
+En Linux o macOS:
+```bash
+export JWT_SECRET="tu-clave-secreta-ficticia-de-desarrollo-de-al-menos-32-chars!"
+./mvnw spring-boot:run
+```
+
+En Windows (PowerShell):
+```powershell
+$env:JWT_SECRET="tu-clave-secreta-ficticia-de-desarrollo-de-al-menos-32-chars!"
+.\mvnw.cmd spring-boot:run
+```
+
 ## Persistencia local y reinicio
 
 - **Base de datos de desarrollo:** se utiliza **Spring Data JPA** con **H2 en archivo**, almacenada localmente en `./data/fixitnowdb.mv.db`. Esta configuración permite que los borradores registrados sobrevivan tras detener y reiniciar la aplicación (`spring.jpa.hibernate.ddl-auto=update`).
